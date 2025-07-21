@@ -1,0 +1,623 @@
+Sets
+    p       "Plants"                / P3, P4, P5, ARC           /
+    SC(p)   "Heat source plants"    / P4, P5                    /
+    SK(p)   "Heat sink plants"      / P3                        /
+    s       "Intermediate fluid"    / hot_IF, cold_IF           / ;
+    
+Alias (p,pp) ;
+Alias (s,ss) ;
+    
+Sets
+    p_wref(p)           "Plants with refrigeration needs"   /   P5      /
+    i                   "Hot process streams"    / P4_s60, P4_s16, P4_s28, P4_s31, P4_s61, P4_s10, P4_s33, P5_s3, P5_s72, P5_s26, P5_s61     /
+    j                   "Cold process streams"  / P3_s7, P3_s8, P3_s11, P3_s13, P3_s16, P3_s17, P3_s22, P3_s25  /
+    i4(i)               "Plant 4 hot process streams"  /   P4_s60, P4_s16, P4_s28, P4_s31, P4_s61, P4_s10, P4_s33    /
+    i5(i)               "Plant 5 hot process streams"  /   P5_s3, P5_s72, P5_s26, P5_s61    /
+    P_HPS(p,i)          "Plant-hot proces stream pairs"      /   P4.P4_s60, P4.P4_s16, P4.P4_s28, P4.P4_s31, P4.P4_s61, P4.P4_s10, P4.P4_s33, P5.P5_s3, P5.P5_s72, P5.P5_s26, P5.P5_s61  /
+    P_HPSwref(p,i)      "Plant-hot process stream pair with refrigeration need"     /   P5.P5_s3, P5.P5_s72, P5.P5_s26, P5.P5_s61      /
+    P_HPSworef(p,i)     "Plant-hot process stream pair with no refrigeration need"  /   P4.P4_s60, P4.P4_s16, P4.P4_s28, P4.P4_s31, P4.P4_s61, P4.P4_s10, P4.P4_s33        /   
+    P_CPS(p,j)          "Plant-cold process stream pair"    /    P3.P3_s7, P3.P3_s8, P3.P3_s11, P3.P3_s13, P3.P3_s16, P3.P3_s17, P3.P3_s22, P3.P3_s25   /
+    P4_HPS(p,i)         "Plant 4 hot process stream pairs"   /   P4.P4_s60, P4.P4_s16, P4.P4_s28, P4.P4_s31, P4.P4_s61, P4.P4_s10, P4.P4_s33      /
+    P5_HPS(p,i)         "Plant 5 hot process stream pairs"  /    P5.P5_s3, P5.P5_s72, P5.P5_s26, P5.P5_s61     /
+    plant_IF_circuit1(p,s,pp,ss) "Interconnections between plants and IHTF in circuit 1"
+                                                / P5.cold_IF.P4.cold_IF,
+                                                  P4.cold_IF.P3.hot_IF,
+                                                  P3.hot_IF.P5.cold_IF /
+    plant_connect_circuit1(p,pp) "Interconnections between plants in circuit 1"
+                                                /   P5.P4,
+                                                    P4.P3,
+                                                    P3.P5  / ;
+    
+Scalars
+    Af                      "Annual factor for capital costs"                                           /   0.264       /
+    b_maint                 "Annual pipeline maintenance cost as a percentage of the pipe capital cost" /   0.05        /
+    B_pipe                  "Piping cost parameter in $/m^1.7 units as of January 2006"                 /   4700        /
+    n_pipe                  "Piping cost sizing exponent as of January 2006"                            /   1.7         /    
+    CEPCI_2006_pipe         "CEPCI for pipes as of January 2006"                                        /   655.9       /
+    CEPCI_2024_pipe         "CEPCI for pipes as of May 2024"                                            /   1357.1      /
+    CEPCI_2001_plant        "Composite CEPCI as of May to December 2001"                                /   397         /
+    CEPCI_2024_plant        "Composite CEPCI as of May 2024"                                            /   800.3       /
+    C_power                 "Unitary purchase cost of electricity in US$/kWh as of August 2024"         /   0.282       /
+    cp_water                "Water specific heat in kJ/kg-K"                                            /   4.187       /
+    cp_IHTF                 "Intermediate fluid specific heat in kJ/kg-K"                               /   2.2         /
+    CU_cw                   "Cooling water utility cost in $1000/kW-yr"                                 /   0.01192     /
+    EMAT_ARC                "Heat exchagner minimum approach temperature in the ARC plant in deg C"     /   5           /
+    F                       "Cost of valves, fittings, and erection as a percentage of the pipe purchase cost"  /   1.5 /
+    h_IHTF                  "IHTF heat transfer coefficient in kW/m^2-K"                                /   1.5         /
+    h_LiBraq                "Aqueous LiBr solution heat transfer coefficient in kW/m^2-K"               /   1           /
+    h_water                 "Water heat transfer coefficient in kW/m^2-K"                               /   1           /
+    HU_hp                   "High pressure steam utility cost in $1000/kW-yr"                           /   0.17849     /
+    HU_lp                   "Low pressure steam utility cost in $1000/kW-yr"                            /   0.14317     /
+    HU_mp                   "Medium pressure steam utility cost in $1000/kW-yr"                         /   0.15043     /
+    Hy                      "Total operation time of one year in hr/year"                               /   8000        /
+    K1_HEX                  "HEX capital cost parameter K1"                                             /   4.3247      /
+    K2_HEX                  "HEX capital cost parameter K2"                                             /   -0.303      /
+    K3_HEX                  "HEX capital cost parameter K3"                                             /   0.1634      /
+    K1_pump                 "Pump capital cost parameter K1"                                            /   3.3892      /
+    K2_pump                 "Pump capital cost parameter K2"                                            /   0.0536      /
+    K3_pump                 "Pump capital cost parameter K3"                                            /   0.1538      /
+    RU_low                  "Low temperature refrigeration utility cost in $1000/kW-yr"                 /   0.26774     /
+    RU_modlow               "Moderately low temperature refrigeration utility cost in $1000/kW-yr"      /   0.15043     /
+    RU_verylow              "Very low temperature refrigeration utility cost in $1000/kW-yr"            /   0.44529     /
+    Tin_ARCcw               "Cooling water utility temperature entering the ARC plant in °C"            /   25          /
+    Tin_cw                  "Cooling water utility temperature entering the heat source plants in deg C"   /   25          /
+    Tmin                    "Minimum IHTF temperature in deg C"                                         /   45          /
+    Tmax                    "Maximum IHTF temperature in deg C"                                         /   390         /
+    Tout_ARCcw              "Cooling water utility temperature leaving the ARC plant in deg C"             /   27.8        /
+    U                       "Overall insulated pipeline heat transfer coefficient in W/m^2-K"           /   0.326       /    
+    delta                   "Small number added to the denominator to prevent division by zero"         /   0.000001    /
+    delta_T_CHW             "Temperature difference between the pipe wall of the chilled water pipeline and ambient air in deg C"  /    10     /
+    delta_T_IHTF            "Temperature difference between the pipe wall of the IHTF pipeline and ambient air in deg C"           /   50     /
+    epsilon_SHE             "Solution heat exchanger effectiveness"                                     /   0.85        /
+    etta_pump               "Pump mechanical efficiency"                                                /   0.7         /
+    gamma_ARCgen            "Upper bound of the temperature difference between the ARC working fluid in the generator and the hot IHTF in deg C"    /   331.5     /
+    gamma_ARCevap           "Upper bound of the temperature difference between the ARC refrigerant in the evaporator and the chilled water returning from the heat source plants in deg C"  /   400     /
+    gamma_ARCcond           "Upper bound of the temperature difference between the ARC refrigerant in the condenser and the cooling water from the cooling utility plant in deg C"  /   80      /
+    gamma_ARCabs            "Upper bound of the temperature difference between the ARC working fluid in the absorber and cooling water from the cooling utility plant in deg C"     /   20      /
+    gamma_ARCshe            "Upper bound of the temperature difference between the weak and strong LiBr solutions in the solution heat exchanger in deg C"      /   75      /
+    mu_IHTF                 "IHTF viscosity in Pa-s"                                      /   0.0334  /
+    mu_water                "Water viscosity in Pa-s at 25 deg C"                         /   0.0008901   /    
+    rho_IHTF                "IHTF density in kg/m^3"                                      /   868.5       /
+    rho_water               "Water densitiy in kg/m^3"                                    /   1000        /
+    
+    A0                      "A0"        /   5506.219979 /
+    A1                      "A1"        /   521.3228937 /
+    A2                      "A2"        /   7.774930356 /
+    A3                      "A3"        /   -0.04575233382  /
+    A4                      "A4"        /   -579.2935726    /
+    B0                      "B0"        /   145.2749674     /
+    B1                      "B1"        /   -0.4984840771   /
+    B2                      "B2"        /   0.0883691918    /
+    B3                      "B3"        /   -0.0004870995781    /
+    B4                      "B4"        /   -2.905161205    /
+    C0                      "C0"        /   0.02648364473   /
+    C1                      "C1"        /   -0.002311041091 /
+    C2                      "C2"        /   -0.00000755973662   /
+    C3                      "C3"        /   -0.00000003763934193    /
+    C4                      "C4"        /   0.001176240649  /
+    D0                      "D0"        /   -0.00000852651695   /
+    D1                      "D1"        /   0.000001320154794   /
+    D2                      "D2"        /   0.00000000002791995438  /
+    D4                      "D4"        /   -0.0000008511514931 /
+    E0                      "E0"        /   -0.00000000003840447174 /
+    E1                      "E1"        /   0.00000000002625469387  /
+    F0                      "F0"        /   -51.59906276            /
+    F1                      "F1"        /   1.114573398             /
+    L0                      "L0"        /   -2183.429482            /
+    L1                      "L1"        /   -126.6985094            /
+    L2                      "L2"        /   -2.364551372            /
+    L3                      "L3"        /   0.01389414858           /
+    L4                      "L4"        /   158.3405426             /
+    M0                      "M0"        /   -22.67095847            /
+    M1                      "M1"        /   0.2983764494            /
+    M2                      "M2"        /   -0.01259393234          /
+    M3                      "M3"        /   0.00006849632068        /
+    M4                      "M4"        /   0.2767986853            /
+    V0                      "V0"        /   0.001176741611          /
+    V1                      "V1"        /   -0.00001002511661       /
+    V2                      "V2"        /   -0.00000001695735875    /
+    V3                      "V3"        /   -0.000001497186905      /
+    V4                      "V4"        /   0.00000002538176345     /
+    V5                      "V5"        /   0.00000000005815811591  /
+    V6                      "V6"        /   0.000000003057997846    /
+    V7                      "V7"        /   -0.00000000005129589007 / ;
+    
+Sets
+    k         "All plants temperature locations = NOK + 1"          /   1*2     /
+    st(k)     "All plants superstructure stages"
+    
+Singleton Set
+    firstK(k)      "First temperature location in all plants"
+    lastK(k)       "Last temperature location in all plants"   ;
+
+st(k)     = yes$(ord(k) < card(k));
+firstK(k) = yes$(ord(k) = 1);
+lastK(k)  = yes$(ord(k) = card(k));
+  
+Table tin_h(p,i)  "Supply temperature of hot process streams in deg C"
+                P4_s60  P4_s16  P4_s28  P4_s31  P4_s61  P4_s10  P4_s33  P5_s3   P5_s72  P5_s26  P5_s61
+        P4      400     390     390     390     390     560     560
+        P5                                                              86      86      83      75  ;
+        
+Table tout_h(p,i) "Target temperature of hot process streams in deg C"
+                P4_s60  P4_s16  P4_s28  P4_s31  P4_s61  P4_s10  P4_s33  P5_s3   P5_s72  P5_s26  P5_s61
+        P4      35      104     104     104     150     390     390
+        P5                                                              4       4       3       4  ;
+        
+Table tin_c(p,j)  "Supply temperatures of cold process streams in deg C"
+                P3_s7   P3_s8   P3_s11  P3_s13  P3_s16  P3_s17  P3_s22  P3_s25                
+        P3      15      35      1       15      15      15      15      5  ;
+        
+Table tout_c(p,j) "Target temperatures of cold process streams in deg C"
+                P3_s7   P3_s8   P3_s11  P3_s13  P3_s16  P3_s17  P3_s22  P3_s25                
+        P3      85      60      15      80      52      55      80      80  ;
+        
+Table h_h(p,i)    "Heat transfer coefficients of hot process streams in kW/m^2-K"
+                P4_s60  P4_s16  P4_s28  P4_s31  P4_s61  P4_s10  P4_s33  P5_s3   P5_s72  P5_s26  P5_s61
+        P4      1       1       1       1       1       1       1
+        P5                                                              1       1       1       1 ;
+        
+Table h_c(p,j)    "Heat transfer coefficients of cold process streams in kW/m^2-K"
+                P3_s7   P3_s8   P3_s11  P3_s13  P3_s16  P3_s17  P3_s22  P3_s25                
+        P3      1       1       1       1       1       1       1       1  ;
+        
+Table F_h(p,i)    "Hot process stream heat capacity flow rates in kW/K"
+                P4_s60  P4_s16  P4_s28  P4_s31  P4_s61  P4_s10  P4_s33  P5_s3   P5_s72  P5_s26  P5_s61
+        P4      8.56    5.58    9.27    8.66    34.18   8.64    53.05
+        P5                                                              3.38    3.38    3.18    45.87;
+        
+Table F_c(p,j)    "Cold process stream heat capacity flow rates in kW/K"
+                P3_s7   P3_s8   P3_s11  P3_s13  P3_s16  P3_s17  P3_s22  P3_s25                
+        P3      28.89   25.08   92.21   117.29  15.7    32.35   83.37   17.96  ;
+        
+Table ech(p,i)  "Total cooling demand of hot process streams in kW"
+                P4_s60  P4_s16  P4_s28  P4_s31  P4_s61  P4_s10  P4_s33  P5_s3   P5_s72  P5_s26  P5_s61
+        P4      3126    1597    2652    2477    8202    1468    9018
+        P5                                                              277     277     254     3257 ;
+        
+Table ecc(p,j)  "Total heating demand of cold process streams in kW"
+                P3_s7   P3_s8   P3_s11  P3_s13  P3_s16  P3_s17  P3_s22  P3_s25                
+        P3      2022    627     1291    7624    581     1294    5419    1347    ;
+        
+Table EMAT_h(p,i) "Minimum temperature difference between hot process stream and cold intermediate fluid in deg C"
+                P4_s60  P4_s16  P4_s28  P4_s31  P4_s61  P4_s10  P4_s33  P5_s3   P5_s72  P5_s26  P5_s61
+        P4      10      10      10      10      10      10      10 
+        P5                                                              10      10      10      10 ;
+        
+Table EMAT_c(p,j) "Minimum temperature difference between cold process stream and hot intermediate fluid in deg C"
+                P3_s7   P3_s8   P3_s11  P3_s13  P3_s16  P3_s17  P3_s22  P3_s25                
+        P3      10      10      10      10      10      10      10      10    ;
+        
+Table L(p,p)    "Distance between plants in m"
+                P3          P4             P5          ARC              
+        P3                  3828.838       3465.54     3808.838
+        P4      3828.838                   500         20                    
+        P5      3465.54     500                        3445.54
+        ARC     3808.838    20             3445.54 ;
+        
+Table Tin_ru(p,i)   "Refrigeration utility inlet temperature in deg C"
+                P5_s3   P5_s72  P5_s26  P5_s61
+        P5      -20     -20     -20     -20  ;
+        
+Table Tout_ru(p,i)  "Refrigeration utility inlet temperature in deg C"
+                P5_s3   P5_s72  P5_s26  P5_s61
+        P5      -20     -20     -20     -20  ;
+        
+Parameter gamma_c(p,i)  "Upper bound of temperature difference between hot process stream and cold intermediate fluid"  ;
+gamma_c(p,i)$(tin_h(p,i) - Tmin < EMAT_h(p,i)) = abs(tin_h(p,i) - Tmin) + EMAT_h(p,i) ;
+gamma_c(p,i)$(tin_h(p,i) - Tmin >= EMAT_h(p,i)) = max(0, tin_h(p,i) - Tmin, Tmax - tout_h(p,i)) ;
+
+Parameter gamma_h(p,j)  "Upper bound of temperature difference between cold process stream and hot intermediate fluid"  ;
+gamma_h(p,j)$(Tmax - tin_c(p,j) < EMAT_c(p,j)) = abs(Tmax - tin_c(p,j) + EMAT_c(p,j)) ;
+gamma_h(p,j)$(Tmax - tin_c(p,j) >= EMAT_c(p,j)) = max(0, Tmax - tin_c(p,j), tout_c(p,j) - Tmin) ;
+
+Parameter orig_cost(p)  "Original cost shouldered by each plant p when no heat integration is performed" ;
+orig_cost('P3') = sum(j,ecc('P3',j)) * HU_lp ; 
+orig_cost('P4') = sum(i4,ech('P4',i4)) * CU_cw ;
+orig_cost('P5') = sum(i5,F_h('P5',i5) * (tin_h('P5',i5) - 35)) * CU_cw + sum(i5,F_h('P5',i5) * (35 - tout_h('P5',i5))) * RU_low ;
+   
+Positive Variables
+    A_ARC(p,i)                      "Area of the heat exchanger in m^2 between a hot process stream and the chilled water supplied by the ARC plant"
+    A_c(p,j,k)                      "Area of the heat exchanger in m^2 between a cold process stream and the hot IHTF at a superstructure stage"
+    A_h(p,i,k)                      "Area of the heat exchanger in m^2 between a hot process stream and the cold IHTF at a superstructure stage"
+    Din_CHW(p)                      "Internal diameter of the pipeline transporting chilled water from plant p to the ARC plant and vice versa in m"
+    Din_IHTF_1(p,s,pp,ss)           "Internal diameter of the pipeline transporting IHTF in circuit 1 from plant p to plant pp in m"
+    Din_IHTF_2(p,s,pp,ss)           "Internal diameter of the pipeline transporting IHTF in circuit 2 from plant p to plant pp in m"
+    Din_IHTF_3(p,s,pp,ss)           "Internal diameter of the pipeline transporting IHTF in circuit 3 from plant p to plant pp in m"
+    dtc(p,i,k)                      "Temperature difference between the cold IHTF and hot process stream i in plant p at temperature location k in deg C"
+    dtcu(p,i)                       "Temperature difference in deg C between the cooling water utility and the hot process stream i entering the cooling utility HEX"
+    dth(p,j,k)                      "Temperature difference between the hot IHTF and cold process stream j in plant p at temperature location k in deg C"
+    dtout(p,i)                      "Temperature difference in deg C between the refrigeration utility and the hot process stream i leaving the refrigeration utility HEX"
+    dtref1(p,i)                     "Temperature difference in deg C between the cooling water utility and the hot process stream i leaving the cooling utility HEX"
+    dtref2(p,i)                     "Temperature difference in deg C between the chilled water and the hot process stream i leaving the chilled water HEX"
+    dtref3(p,i)                     "Temperature difference in deg C between  the refrigeration utility leaving and the hot process stream i entering the refrigeration utility HEX "
+    fr_CHW(p)                       "Friction factor of the chilled water flow"
+    fr_IHTF_1(p,s,pp,ss)            "Friction factor of the IHTF flow in circuit 1"
+    fr_IHTF_2(p,s,pp,ss)            "Friction factor of the IHTF flow in circuit 2"
+    fr_IHTF_3(p,s,pp,ss)            "Friction factor of the IHTF flow in circuit 3"
+    HEXcost_ARC(p,i)                "Capital cost of the heat exchanger between a hot process stream and the chilled water supplied by the ARC plant in $1000"
+    HEXcost_c(p,j,k)                "Capital cost of the heat exchanger between a cold process stream and the hot IHTF at a superstructure stage in $1000"
+    HEXcost_h(p,i,k)                "Capital cost of the heat exchanger between a hot process stream and the cold IHTF at a superstructure stage in $1000"
+    mdot_CHW(p)                     "Mass flow rate in kg/s of the chilled water flowing through plant p"
+    mdot_cw(p,i)                    "Mass flow rate in kg/s of the cooling water utility receiving heat from hot process stream i at the cooling utility HEX"
+    m_IHTF_1(p,s,pp,ss)             "Heat capacity flow rate of the IHTF flowing through circuit 1 from plant p to plant pp in kW/K"
+    m_IHTF_2(p,s,pp,ss)             "Heat capacity flow rate of the IHTF flowing through circuit 2 from plant p to plant pp in kW/K"
+    m_IHTF_3(p,s,pp,ss)             "Heat capacity flow rate of the IHTF flowing through circuit 3 from plant p to plant pp in kW/K"
+    mARC_bypass                     "Heat capacity flow rate in kW/K of the hot IHTF that bypasses the ARC plant"
+    mARC_gen                        "Heat capacity flow rate in kW/K of the hot IHTF that transfers heat to the ARC working fluid in the generator"
+    Mc(p)                           "Cold IHTF heat capacity flow rate in plant p in kW/K"
+    Mh(p)                           "Hot IHTF heat capacity flow rate in plant p in kW/K"
+    msplitdot_CHW(p,i)              "Mass flow rate in kg/s of the chilled water split stream receiving heat from hot process stream i at the chilled water HEX"
+    Piping_CHW(p)                   "Total annualized cost of the chilled water pipeline in $1000/m"
+    Piping_IHTF_1(p,s,pp,ss)        "Total annualized cost of the IHTF circuit 1 pipeline in $1000/m"
+    Piping_IHTF_2(p,s,pp,ss)        "Total annualized cost of the IHTF circuit 2 pipeline in $1000/m"
+    Piping_IHTF_3(p,s,pp,ss)        "Total annualized cost of the IHTF circuit 3 pipeline in $1000/m"
+    Pl_CHW(p)                       "Capital cost per unit length of the chilled water pipeline in $1000/m"
+    Pl_IHTF_1(p,s,pp,ss)            "Capital cost per unit length of the IHTF circuit 1 pipeline in $1000/m"
+    Pl_IHTF_2(p,s,pp,ss)            "Capital cost per unit length of the IHTF circuit 2 pipeline in $1000/m"
+    Pl_IHTF_3(p,s,pp,ss)            "Capital cost per unit length of the IHTF circuit 3 pipeline in $1000/m"
+    Pumpcapital_CHWsupplypump(p)    "Capital cost of the chilled water pump in $1000"
+    Pumpcapital_IHTF_1(p,s,pp,ss)   "Capital cost of the IHTF circuit 1 pump in $1000"
+    Pumpcapital_IHTF_2(p,s,pp,ss)   "Capital cost of the IHTF circuit 2 pump in $1000"
+    Pumpcapital_IHTF_3(p,s,pp,ss)   "Capital cost of the IHTF circuit 3 pump in $1000"
+    Pumping_CHWreturnpump(p)        "Total annualized cost of the chilled water return pump in $1000/yr"
+    Pumping_CHWsupplypump(p)        "Total annualized cost of the chilled water supply pump in $1000/yr"
+    Pumping_IHTF_1(p,s,pp,ss)       "Total annualized cost of the IHTF circuit 1 pump in $1000/yr"
+    Pumping_IHTF_2(p,s,pp,ss)       "Total annualized cost of the IHTF circuit 2 pump in $1000/yr"
+    Pumping_IHTF_3(p,s,pp,ss)       "Total annualized cost of the IHTF circuit 3 pump in $1000/yr"
+    Pumpoperation_CHWsupplypump(p)  "Annual operation cost of the chilled water supply pump in $1000/yr"
+    Pumpoperation_IHTF_1(p,s,pp,ss) "Annual operation cost of the IHTF circuit 1 pump in $1000/yr"
+    Pumpoperation_IHTF_2(p,s,pp,ss) "Annual operation cost of the IHTF circuit 2 pump in $1000/yr"
+    Pumpoperation_IHTF_3(p,s,pp,ss) "Annual operation cost of the IHTF circuit 3 pump in $1000/yr"
+    qARC_h(p,i)                     "Heat absorbed by the chilled water from hot process stream i in kW"
+    qc(p,i,k)                       "Heat absorbed by cold IHTF from hot process stream i at stage k of plant p in kW"
+    qh(p,j,k)                       "Heat transferred by hot IHTF to cold process stream j at stage k of plant p in kW"
+    qru_h(p,i)                      "Refrigeration utility load of hot process stream i in kW"
+    qu_c(p,j)                       "Hot utility load of cold process stream j in kW"
+    qu_h(p,i)                       "Cold utility load of hot process stream i in kW"
+    Re_CHW(p)                       "Reynolds number of the chilled water flow in 1000 units"
+    Re_IHTF_1(p,s,pp,ss)            "Reynolds number of the IHTF flow in circuit 1 in 1000 units"
+    Re_IHTF_2(p,s,pp,ss)            "Reynolds number of the IHTF flow in circuit 2 in 1000 units"
+    Re_IHTF_3(p,s,pp,ss)            "Reynolds number of the IHTF flow in circuit 3 in 1000 units"
+    t_c(p,j,k)                      "Cold process stream temperature at temperature location k in deg C"
+    t_CHW(p)                        "Temperature of the chilled water at the outlet of a heat source plant in deg C"
+    t_CHWreturn                     "Temperature of the chilled water at the ARC mixer as it enters the ARC plant in deg C"
+    t_CHWsupply                     "Temperature of the chilled water at the ARC splitter as it leaves the ARC plant in deg C"
+    tARCmix_CHW(p)                  "Temperature of the chilled water returned by a heat source plant as it enters the ARC plant mixer in deg C"
+    tcm(p,k)                        "Cold IHTF temperature at temperature location k of plant p in deg C"
+    tcmin(p)                        "Cold IHTF temperature at the inlet of plant p in deg C"
+    tcmout(p)                       "Cold IHTF temperature at the outlet of plant p in deg C"
+    thm(p,k)                        "Hot IHTF temperature at temperature location k of plant p in deg C"
+    thmin(p)                        "Hot IHTF temperature at the inlet of plant p in deg C"
+    thmout(p)                       "Hot IHTF temperature at the outlet of plant p in deg C"
+    thmout_ARCgen                   "Hot IHTF temperature leaving the ARC generator in deg C"
+    tin_CHW(p)                      "Temperature of the chilled water at the inlet of a heat source plant in deg C"
+    tout_CHW(p,i)                   "Temperature of the chilled water split stream leaving the chilled water HEX of a hot process stream in deg C"
+    tout_CW(p,i)                    "Temperature of the cooling water utility leaving the cooling utility HEX of a hot process stream in deg C"
+    v_CHW(p)                        "Pipeline velocity of chilled water in m/s"
+    v_IHTF_1(p,s,pp,ss)             "Pipeline velocity of IHTF in circuit 1 in m/s"
+    v_IHTF_2(p,s,pp,ss)             "Pipeline velocity of IHTF in circuit 2 in m/s"
+    v_IHTF_3(p,s,pp,ss)             "Pipeline velocity of IHTF in circuit 3 in m/s"
+    Wdot_CHWreturnpump(p)           "Power consumption of the chilled water return pump in kW"
+    Wdot_CHWsupplypump(p)           "Power consumption of the chilled water supply pump in kW"
+    Wdot_IHTFpump_1(p,s,pp,ss)      "Power consumption of the IHTF circuit 1 pump in kW"
+    Wdot_IHTFpump_2(p,s,pp,ss)      "Power consumption of the IHTF circuit 2 pump in kW"
+    Wdot_IHTFpump_3(p,s,pp,ss)      "Power consumption of the IHTF circuit 3 pump in kW"
+    y(p,s,pp,ss)                    "Denotes existence of connection between plants p and pp"
+    zarc                            "Denotes activation of the ARC system"
+    zARC_h(p,i)                     "Denotes existence of a chilled water HEX for hot process stream i"
+    zc(p,i,k)                       "Denotes existence of HEX between cold IHTF and hot process stream i at stage k of plant p"
+    zcu(p,i)                        "Denotes existence of a cold utility HEX for hot process stream i"
+    zh(p,j,k)                       "Denotes existence of HEX between hot IHTF and cold process stream j at stage k of plant p"
+    zru(p,i)                        "Denotes existence of a refrigeration utility HEX for hot process stream i"
+    deltaP_CHW(p)                   "Pressure drop along the chilled water pipeline in kPa"
+    deltaP_IHTF_1(p,s,pp,ss)        "Pressure drop along the IHTF circuit 1 pipeline in kPa"
+    deltaP_IHTF_2(p,s,pp,ss)        "Pressure drop along the IHTF circuit 2 pipeline in kPa"
+    deltaP_IHTF_3(p,s,pp,ss)        "Pressure drop along the IHTF circuit 3 pipeline in kPa"
+    
+    alloc(p)                        "Shared cost allocation for plant p in $1000/yr"
+    TSC                             "Total shared cost in $1000/yr"
+    
+    A_ARCabs                        "Heat exchange area of the ARC absorber in m^2"
+    A_ARCcondSH                     "Heat exchange area in m^2 of the section of the ARC condenser where sensible heat is rejected by the water refrigerant"
+    A_ARCcondTP                     "Heat exchange area in m^2 of the section of the ARC condenser where latent heat is rejected by the water refrigerant"
+    A_ARCevap                       "Heat exchange area of the ARC evaporator in m^2"
+    A_ARCgen                        "Heat exchange area of the ARC generator in m^2"
+    A_ARCshe                        "Heat exchange area of the ARC solution HEX in m^2"
+    dtARCabs1                       "Temperature difference in deg C between the ARC working fluid and the cooling water utility leaving the absorber"
+    dtARCabs2                       "Temperature difference in deg C between the ARC working fluid and the cooling water utility entering the absorber"
+    dtARCcond1                      "Temperature difference in deg C between the superheated water vapor refrigerant entering the condenser and the cooling water utility leaving the condenser"
+    dtARCcond2                      "Temperature difference in deg C between the saturated liquid water refrigerant and the cooling water utility entering the condenser"
+    dtARCcondinter                  "Temperature difference in deg C between the saturated water vapor refrigerant and the cooling water utility"
+    dtARCevap1                      "Temperature difference in deg C between the chilled water returning to the ARC plant and the ARC working fluid"
+    dtARCevap2                      "Temperature difference in deg C between the chilled water leaving the ARC plant and the ARC working fluid"
+    dtARCgen1                       "Temperature difference in deg C between the hot IHTF entering the generator and the ARC working fluid"
+    dtARCgen2                       "Temperature difference in deg C between the hot IHTF leaving the generator and the ARC working fluid"
+    dtARCshe1                       "Temperature difference in deg C between the strong LiBr solution entering and the weak LiBr solution leaving the solution HEX"
+    dtARCshe2                       "Temperature difference in deg C between the strong LiBr solution leaving and the weak LiBr solution entering the solution HEX"
+    h_ARC_2                         "Enthalpy of the superheated water vapor refrigerant entering the condenser in kJ/kg"
+    h_ARC_3                         "Enthalpy of the saturated water vapor refrigerant at the intermediate point of the condenser in kJ/kg"
+    h_ARC_4                         "Enthalpy of the saturated liquid water refrigerant leaving the condenser in kJ/kg"
+    h_ARC_5                         "Enthalpy of the two-phase water refrigerant entering the evaporator in kJ/kg"
+    h_ARC_6                         "Enthalpy of the saturated water vapor refrigerant at the evaporator outlet and entering the absorber in kJ/kg"
+    h_ARC_8                         "Enthalpy of the weak LiBr solution entering the absorber in kJ/kg"
+    h_ARC_9                         "Enthalpy of the weak LiBr solution at the pump outlet and entering the solution HEX in kJ/kg"
+    h_ARC_10                        "Enthalpy of the weak LiBr solution leaving the solution HEX and entering the generator in kJ/kg"
+    h_ARC_11                        "Enthalpy of the weak LiBr solution leaving the solution HEX and entering the generator in kJ/kg"
+    h_ARC_12                        "Enthalpy of the strong LiBr solution leaving the solution HEX in kJ/kg"
+    h_ARC_13                        "Enthalpy of the strong LiBr solution entering the absorber in kJ/kg"
+    HEXcost_ARCabs                  "Capital cost of the ARC absorber in $1000"
+    HEXcost_ARCcondSH               "Capital cost in $1000 of the section of the ARC condenser where sensible heat is rejected by the water refrigerant"
+    HEXcost_ARCcondTP               "Capital cost in $1000 of the section of the ARC condenser where latent heat is rejected by the water refrigerant"
+    HEXcost_ARCevap                 "Capital cost of the ARC evaporator in $1000"
+    HEXcost_ARCgen                  "Capital cost of the ARC generator in $1000"
+    HEXcost_ARCshe                  "Capital cost of the ARC solution HEX in $1000"
+    mdot_ARC_ref                    "Mass flow rate of the water refrigerant in kg/s"
+    mdot_ARC_strong                 "Mass flow rate of the strong LiBr solution in kg/s"
+    mdot_ARC_weak                   "Mass flow rate of the weak LiBr solution in kg/s"
+    P_ARC_c                         "Working pressure of the ARC condenser and generator in kPa"
+    P_ARC_e                         "Working pressure of the ARC evaporator and absorber in kPa"
+    Pumpcapital_ARC                 "Capital cost of the ARC pump in $1000"
+    Pumping_ARC                     "Total annualized cost of the ARC pump in $1000/yr"
+    Pumpoperation_ARC               "Annual operation cost of the ARC pump in $1000/yr"
+    Qdot_ARCabs                     "Heat rejected by the weak LiBr solution to the cooling water utility in the absorber in kW"
+    Qdot_ARCcond                    "Heat rejected by the hot ARC refrigerant to the cooling water utility in the condenser in kW"
+    Qdot_ARCcondSH                  "Rate of sensible heat rejection by the water refrigerant at the condenser in kW"
+    Qdot_ARCcondTP                  "Rate of latent heat rejection by the water refrigerant at the condenser in kW"
+    Qdot_ARCevap                    "Heat transferred by the chilled water returning from the heat source plants to the ARC working fluid in the evaporator in kW"
+    Qdot_ARCgen                     "Heat transferred by the hot IHTF to the ARC working fluid in the evaporator in kW"
+    Qdot_ARCshe                     "Rate of heat exchange at the solution HEX in kW"
+    s_ARC_8                         "Entropy of the weak LiBr solution at the absorber outlet in kJ/kg-K"
+    s_ARC_9                         "Entropy of the weak LiBr solution at the pump outlet in kJ/kg-K"
+    t_ARC_9                         "Temperature of the weak LiBr solution at the pump outlet in deg C"
+    t_ARC_10                        "Temperature of the weak LiBr solution leaving the solution HEX in deg C"
+    t_ARC_12                        "Temperature of the strong LiBr solution leaving the solution heat exchanger in deg C"
+    t_ARC_a                         "Working temperature of the ARC absorber in deg C"
+    t_ARC_c                         "Working temperature of the ARC condenser in deg C"
+    t_ARC_e                         "Working temperature of the ARC evaporator in deg C"
+    t_ARC_g                         "Working temperature of the ARC generator in deg C"
+    t_ARCcwcondinter                "Temperature of the cooling water utility at the intermediate point of the ARC condenser in deg C"
+    x_strong                        "Concentration of the strong LiBr solution in kg-LiBr/kg-solution"
+    x_weak                          "Concentration of the weak LiBr solution in kg-LiBr/kg-solution"
+    Wdot_ARCpump                    "Power consumption of the ARC pump in kW" ;
+
+Variable
+    t_h(p,i,k)                      "Hot process stream temperature at stage k in deg C"
+    tref1_h(p,i)                    "Temperature of the hot process stream i leaving the cooling utility HEX in deg C"
+    tref2_h(p,i)                    "Temperature of the hot process stream i leaving the chilled water HEX in deg C"
+    plant_savings(p)                "Savings incurred by each plant in $1000/yr"
+    savings                         "Sum of the logarithms of the savings incurred by all plants";
+    
+Equations
+
+    HEN_Constraint_1a_IHTF_1                "Mass balance on the hot IHTF splitter of Plant 3"                      
+    
+    HEN_Constraint_2a_IHTF_1                "Mass balance on the cold IHTF splitter of Plant 5"
+    HEN_Constraint_2b_IHTF_1                "Mass balance on the cold IHTF splitter of Plant 4"
+
+    HEN_Constraint_4_IHTF_1(p,s,pp,ss)      "Logical constraint for connection between plants in IHTF circuit 1"
+
+    HEN_Constraint_5a_IHTF_1                "Mass balance on the hot IHTF mixer of Plant 3"
+    
+    HEN_Constraint_6a_IHTF_1                "Mass balance on the cold IHTF mixer of Plant 5"
+    HEN_Constraint_6b_IHTF_1                "Mass balance on the cold IHTF mixer of Plant 4"
+    
+    HEN_Constraint_7a_IHTF_1                "IHTF heat loss between Plant 5 (heat source) and Plant 4 (heat source)"
+    HEN_Constraint_7b_IHTF_1                "IHTF heat loss between Plant 4 (heat source) and Plant 3 (heat sink)"
+    HEN_Constraint_7d_IHTF_1                "IHTF heat loss between Plant 3 (heat sink) and Plant 5 (heat source)"
+    
+    HEN_Constraint_14(p)                    "Assignment of the hot IHTF inlet temperature to the first temperature location of the heat sink plants"
+    
+    HEN_Constraint_15(p)                    "Assignment of the hot IHTF outlet temperature to the last temperature location of the heat sink plants"
+
+    HEN_Constraint_16(p)                    "Assignment of the cold IHTF outlet temperature to the first temperature location of the heat source plants"
+
+    HEN_Constraint_17(p)                    "Assignment of the cold IHTF inlet temperature to the last temperature location of the heat source plants"
+
+    HEN_Constraint_18a(p,i)                 "Assignment of a hot process stream supply temperature to the first temperature location of heat source plant p"
+
+    HEN_Constraint_19a(p,j)                 "Assignment of a cold process stream supply temperature to the last temperature location of heat sink plant p"
+
+    HEN_Constraint_20a(p,i)                 "Overall energy balance for hot process stream with refrigeration need"
+    HEN_Constraint_20b(p,i)                 "Overall energy balance for hot process stream with no refrigeration need"
+    
+    HEN_Constraint_21a(p,j)                 "Overall energy balance for all cold process streams in the heat sink plants"
+    
+    HEN_Constraint_22a(p,i,k)               "Monotonic decrease in hot process stream temperature in heat source plant p"
+    
+    HEN_Constraint_23a(p,j,k)               "Monotonic decrease in cold process stream temperature in heat sink plant p"
+    
+    HEN_Constraint_24a(p,k)                 "Monotonic decrease in hot IHTF temperature in the heat sink plants"
+    
+    HEN_Constraint_25a(p,k)                 "Monotonic decrease in cold IHTF temperature in the heat source plants"
+    
+    HEN_Constraint_26a(k)                   "Stage-wise energy balance on the heat received by each cold process stream in Plant 3 from the hot IHTF"
+    
+    HEN_Constraint_27a(k)                   "Stage-wise energy balance on the heat transferred by each hot process stream in Plant 4 to the cold IHTF"
+    HEN_Constraint_27b(k)                   "Stage-wise energy balance on the heat transferred by each hot process stream in Plant 5 to the cold IHTF"
+
+    HEN_Constraint_30(p,i,k)                "Stage-wise heat rejection from each hot process stream in heat source plant p to the cold IHTF"
+    
+    HEN_Constraint_31(p,j,k)                "Stage-wise heat absorption by each cold process stream in heat sink plant p from the hot IHTF"
+
+    HEN_Constraint_32(p,i,k)                "Logical constraint for the existence of a stagewise HEX between a hot process stream in heat source plant p and the cold IHTF"
+
+    HEN_Constraint_33(p,j,k)                "Logical constraint for the existence of a stagewise HEX between a cold process stream in heat sink plant p and the hot IHTF"
+
+    HEN_Constraint_38a(p,j,k)               "Approach temperature at the left side of the stagewise HEX between each cold process stream and the hot IHTF"
+    HEN_Constraint_38b(p,j,k)               "Approach temperature at the right side of the stagewise HEX between each cold process stream and the hot IHTF"   
+
+    HEN_Constraint_39a(p,i,k)               "Approach temperature at the left side of the stagewise HEX between each hot process stream in Plant p and the cold IHTF"
+    HEN_Constraint_39b(p,i,k)               "Approach temperature at the right side of the stagewise HEX between each hot process stream in Plant p and the cold IHTF"
+    
+    HEN_Constraint_43a(p,i)                 "Monotonic decrease in the temperature of the hot process streams in Plant 3 with refrigeration need across the cooling utility HEX"
+    HEN_Constraint_43c(p,i)                 "Monotonic decrease in the temperature of the hot process streams in Plant 3 with refrigeration need across the refrigeration utility HEX"
+
+    HEN_Constraint_48a(p,j)                 "Hot utility load for each cold process stream in the heat sink plants"
+
+    HEN_Constraint_49(p,i)                  "Cold utility load for the hot process streams with no refrigeration need"
+
+    HEN_Constraint_50a(p,i)                 "Cold utility load for hot process streams with refrigeration need"
+    
+    HEN_Constraint_55a(p,s,pp,ss)           "Internal diameter of the pipeline for the IHTF circuit 1"
+    
+    HEN_Constraint_56a(p,s,pp,ss)           "Cost per unit length of the IHTF pipeline for circuit 1"
+
+    HEN_Constraint_57a(p,s,pp,ss)           "Annualized cost of the IHTF pipeline for circuit 1"
+
+    HEN_Constraint_61a(p,s,pp,ss)           "Pressure drop along the IHTF pipeline in circuit 1"
+
+    HEN_Constraint_62a(p,s,pp,ss)           "IHTF velocity inside the pipeline of IHTF circuit 1"
+
+    HEN_Constraint_63a(p,s,pp,ss)           "IHTF Reynolds number in circuit 1"
+
+    HEN_Constraint_64a(p,s,pp,ss)           "IHTF pipeline friction factor in circuit 1"
+    
+    HEN_Constraint_65a(p,s,pp,ss)           "IHTF pump power consumption in circuit 1"
+
+    HEN_Constraint_66a(p,s,pp,ss)           "Capital cost of the IHTF pump in circuit 1"
+
+    HEN_Constraint_67a(p,s,pp,ss)           "Annual operation cost of the IHTF pump in circuit 1"
+
+    HEN_Constraint_68a(p,s,pp,ss)           "Total annualized cost of the IHTF pumping system in circuit 1"
+
+    HEN_Constraint_79(p,i,k)                "Computation of the area of the heat exchanger between each hot process stream in the heat source plants and the cold IHTF"
+
+    HEN_Constraint_80(p,j,k)                "Computation of the area of the heat exchanger between each cold process stream in the heat sink plants and the hot IHTF"
+
+    HEN_Constraint_82(p,i,k)                "Capital cost computation for the heat exchanger between each hot process stream and the cold IHTF"
+
+    HEN_Constraint_83(p,j,k)                "Capital cost computation for the heat exchanger between each cold process stream in the heat sink plants and the hot IHTF"
+    
+    General_Constraint_1                    "Total shared cost computation"
+    General_Constraint_2                    "Requirement that the sum of cost allocations to all plants should be equal to the total shared cost"
+    
+    Objective                               "Maximize sum of the logarithms of the savings incurred by all plants";
+
+HEN_Constraint_1a_IHTF_1.. Mh('P3') =e= m_IHTF_1('P3','hot_IF','P5','cold_IF') ;
+
+HEN_Constraint_2a_IHTF_1.. Mc('P5') =e= m_IHTF_1('P5','cold_IF','P4','cold_IF') ;
+HEN_Constraint_2b_IHTF_1.. Mc('P4') =e= m_IHTF_1('P4','cold_IF','P3','hot_IF') ;
+
+HEN_Constraint_4_IHTF_1(p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss).. y(p,s,pp,ss) =e= m_IHTF_1(p,s,pp,ss) / (m_IHTF_1(p,s,pp,ss) + delta) ;
+
+HEN_Constraint_5a_IHTF_1.. Mh('P3') =e= m_IHTF_1('P4','cold_IF','P3','hot_IF') ;
+
+HEN_Constraint_6a_IHTF_1.. Mc('P5') =e= m_IHTF_1('P3','hot_IF','P5','cold_IF') ;
+HEN_Constraint_6b_IHTF_1.. Mc('P4') =e= m_IHTF_1('P5','cold_IF','P4','cold_IF') ;
+
+HEN_Constraint_7a_IHTF_1.. m_IHTF_1('P5','cold_IF','P4','cold_IF') * (tcmout('P5') - tcmin('P4')) * 10**3 =e= pi * Din_IHTF_1('P5','cold_IF','P4','cold_IF') * L('P5','P4') * U * delta_T_IHTF ;
+HEN_Constraint_7b_IHTF_1.. m_IHTF_1('P4','cold_IF','P3','hot_IF') * (tcmout('P4') - thmin('P3')) * 10**3 =e= pi * Din_IHTF_1('P4','cold_IF','P3','hot_IF') * L('P4','P3') * U * delta_T_IHTF ;
+HEN_Constraint_7d_IHTF_1.. m_IHTF_1('P3','hot_IF','P5','cold_IF') * (thmout('P3') - tcmin('P5')) * 10**3 =e= pi * Din_IHTF_1('P3','hot_IF','P5','cold_IF') * L('P3','P5') * U * delta_T_IHTF ;
+
+HEN_Constraint_14(p)$SK(p).. thm(p,firstK) =e= thmin(p) ;
+
+HEN_Constraint_15(p)$SK(p).. thm(p,lastK) =e= thmout(p) ;
+
+HEN_Constraint_16(p)$SC(p).. tcm(p,firstK) =e= tcmout(p) ;
+
+HEN_Constraint_17(p)$SC(p).. tcm(p,lastK) =e= tcmin(p) ;
+
+HEN_Constraint_18a(p,i)$P_HPS(p,i).. t_h(p,i,firstK) =e= tin_h(p,i) ;
+
+HEN_Constraint_19a(p,j)$P_CPS(p,j).. t_c(p,j,lastK) =e= tin_c(p,j) ;
+
+HEN_Constraint_20a(p,i)$P_HPSwref(p,i).. F_h(p,i) * (tin_h(p,i) - tout_h(p,i)) =e= sum(k$st(k),qc(p,i,k)) + qu_h(p,i) + qru_h(p,i) ;
+HEN_Constraint_20b(p,i)$P_HPSworef(p,i).. F_h(p,i) * (tin_h(p,i) - tout_h(p,i)) =e= sum(k$st(k),qc(p,i,k)) + qu_h(p,i) ;
+
+HEN_Constraint_21a(p,j)$P_CPS(p,j).. F_c(p,j) * (tout_c(p,j) - tin_c(p,j)) =e= sum(k$st(k),qh(p,j,k)) + qu_c(p,j) ;
+
+HEN_Constraint_22a(p,i,k)$(P_HPS(p,i) and st(k)).. t_h(p,i,k) =g= t_h(p,i,k+1) ;
+
+HEN_Constraint_23a(p,j,k)$(P_CPS(p,j) and st(k)).. t_c(p,j,k) =g= t_c(p,j,k+1) ;
+
+HEN_Constraint_24a(p,k)$(SK(p) and st(k)).. thm(p,k) =g= thm(p,k+1) ;
+
+HEN_Constraint_25a(p,k)$(SC(p) and st(k)).. tcm(p,k) =g= tcm(p,k+1) ;
+
+HEN_Constraint_26a(k)$st(k).. Mh('P3') * (thm('P3',k) - thm('P3',k+1)) =e= sum(j, qh('P3',j,k)) ;
+
+HEN_Constraint_27a(k)$st(k).. Mc('P4') * (tcm('P4',k) - tcm('P4',k+1)) =e= sum(i4, qc('P4',i4,k)) ;
+HEN_Constraint_27b(k)$st(k).. Mc('P5') * (tcm('P5',k) - tcm('P5',k+1)) =e= sum(i5, qc('P5',i5,k)) ;
+
+HEN_Constraint_30(p,i,k)$(P_HPS(p,i) and st(k)).. F_h(p,i) * (t_h(p,i,k) - t_h(p,i,k+1)) =e= qc(p,i,k) ;
+
+HEN_Constraint_31(p,j,k)$(P_CPS(p,j) and st(k)).. F_c(p,j) * (t_c(p,j,k) - t_c(p,j,k+1)) =e= qh(p,j,k) ;
+
+HEN_Constraint_32(p,i,k)$(P_HPS(p,i) and st(k)).. zc(p,i,k) =e= qc(p,i,k) / (qc(p,i,k) + delta) ;
+
+HEN_Constraint_33(p,j,k)$(P_CPS(p,j) and st(k)).. zh(p,j,k) =e= qh(p,j,k) / (qh(p,j,k) + delta) ;
+
+HEN_Constraint_38a(p,j,k)$(P_CPS(p,j) and st(k)).. dth(p,j,k) =l= thm(p,k) - t_c(p,j,k) + (1 - zh(p,j,k)) * gamma_h(p,j) ;
+HEN_Constraint_38b(p,j,k)$(P_CPS(p,j) and st(k)).. dth(p,j,k+1) =l= thm(p,k+1) - t_c(p,j,k+1) + (1 - zh(p,j,k)) * gamma_h(p,j) ;
+
+HEN_Constraint_39a(p,i,k)$(P_HPS(p,i) and st(k)).. dtc(p,i,k) =l= t_h(p,i,k) - tcm(p,k) + (1 - zc(p,i,k)) * gamma_c(p,i) ;
+HEN_Constraint_39b(p,i,k)$(P_HPS(p,i) and st(k)).. dtc(p,i,k+1) =l= t_h(p,i,k+1) - tcm(p,k+1) + (1 - zc(p,i,k)) * gamma_c(p,i) ;
+
+HEN_Constraint_43a(p,i)$P_HPSwref(p,i).. tref1_h(p,i) =l= t_h(p,i,lastK) ;
+HEN_Constraint_43c(p,i)$P_HPSwref(p,i).. tout_h(p,i) =l= tref1_h(p,i) ;
+
+HEN_Constraint_48a(p,j)$P_CPS(p,j).. qu_c(p,j) =e= F_c(p,j) * (tout_c(p,j) - t_c(p,j,firstK)) ;
+
+HEN_Constraint_49(p,i)$P_HPSworef(p,i).. qu_h(p,i) =e= F_h(p,i) * (t_h(p,i,lastK) - tout_h(p,i)) ;
+
+HEN_Constraint_50a(p,i)$P_HPSwref(p,i).. qu_h(p,i) =e= F_h(p,i) * (t_h(p,i,lastK) - tref1_h(p,i)) ;
+
+HEN_Constraint_55a(p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss).. Din_IHTF_1(p,s,pp,ss) =e= (6.05*10**(-4) * Hy * C_power * (m_IHTF_1(p,s,pp,ss) / cp_IHTF)**2.84 * mu_IHTF**0.16 * rho_IHTF**(-2) / (etta_pump * n_pipe * B_pipe * (1 + F) * (Af + b_maint)))**(1/(4.84+n_pipe)) ;
+
+HEN_Constraint_56a(p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss).. Pl_IHTF_1(p,s,pp,ss) * 1000 =e= B_pipe * Din_IHTF_1(p,s,pp,ss)**n_pipe ;
+
+HEN_Constraint_57a(p,s,pp,ss)$(plant_IF_circuit1(p,s,pp,ss) and plant_connect_circuit1(p,pp)).. Piping_IHTF_1(p,s,pp,ss) =e= Af * L(p,pp) * Pl_IHTF_1(p,s,pp,ss) * CEPCI_2024_pipe / CEPCI_2006_pipe ;
+
+HEN_Constraint_61a(p,s,pp,ss)$(plant_IF_circuit1(p,s,pp,ss) and plant_connect_circuit1(p,pp)).. deltaP_IHTF_1(p,s,pp,ss) * Din_IHTF_1(p,s,pp,ss) * 1000 =e= 2 * fr_IHTF_1(p,s,pp,ss) * L(p,pp) * rho_IHTF * v_IHTF_1(p,s,pp,ss) * v_IHTF_1(p,s,pp,ss) ;
+
+HEN_Constraint_62a(p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss).. v_IHTF_1(p,s,pp,ss) * cp_IHTF * pi * rho_IHTF * Din_IHTF_1(p,s,pp,ss) * Din_IHTF_1(p,s,pp,ss) =e= 4 * m_IHTF_1(p,s,pp,ss) ;
+
+HEN_Constraint_63a(p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss).. Re_IHTF_1(p,s,pp,ss) * mu_IHTF * 1000 =e= rho_IHTF * Din_IHTF_1(p,s,pp,ss) * v_IHTF_1(p,s,pp,ss) ;
+
+HEN_Constraint_64a(p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss).. fr_IHTF_1(p,s,pp,ss) * (Re_IHTF_1(p,s,pp,ss) * 1000)**0.2 =e= 0.046 ;
+
+HEN_Constraint_65a(p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss).. Wdot_IHTFpump_1(p,s,pp,ss) * cp_IHTF * rho_IHTF * etta_pump =e= m_IHTF_1(p,s,pp,ss) * deltaP_IHTF_1(p,s,pp,ss) ;
+
+HEN_Constraint_66a(p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss).. log10(Pumpcapital_IHTF_1(p,s,pp,ss) * 1000 + delta) =e= y(p,s,pp,ss)*K1_pump + K2_pump*log10(Wdot_IHTFpump_1(p,s,pp,ss)+delta) + K3_pump*log10(Wdot_IHTFpump_1(p,s,pp,ss)+delta)*log10(Wdot_IHTFpump_1(p,s,pp,ss)+delta) ;
+
+HEN_Constraint_67a(p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss).. Pumpoperation_IHTF_1(p,s,pp,ss) * 1000 =e= C_power * Hy * Wdot_IHTFpump_1(p,s,pp,ss);
+
+HEN_Constraint_68a(p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss).. Pumping_IHTF_1(p,s,pp,ss) =e= Pumpoperation_IHTF_1(p,s,pp,ss) + Af * Pumpcapital_IHTF_1(p,s,pp,ss) * CEPCI_2024_plant / CEPCI_2001_plant ;
+
+HEN_Constraint_79(p,i,k)$(P_HPS(p,i) and st(k)).. qc(p,i,k)*(h_IHTF**(-1)+h_h(p,i)**(-1)) =e= A_h(p,i,k)*((dtc(p,i,k)*dtc(p,i,k+1)*0.5*(dtc(p,i,k)+dtc(p,i,k+1)))**0.33333) ;
+
+HEN_Constraint_80(p,j,k)$(P_CPS(p,j) and st(k)).. qh(p,j,k)*(h_IHTF**(-1)+h_c(p,j)**(-1)) =e= A_c(p,j,k)*((dth(p,j,k)*dth(p,j,k+1)*0.5*(dth(p,j,k)+dth(p,j,k+1)))**0.33333) ;
+
+HEN_Constraint_82(p,i,k)$(P_HPS(p,i) and st(k)).. log10(HEXcost_h(p,i,k)*1000+delta) =e= zc(p,i,k)*K1_HEX + K2_HEX*log10(A_h(p,i,k)+delta) + K3_HEX*log10(A_h(p,i,k)+delta)*log10(A_h(p,i,k)+delta) ;
+
+HEN_Constraint_83(p,j,k)$(P_CPS(p,j) and st(k)).. log10(HEXcost_c(p,j,k)*1000+delta) =e= zh(p,j,k)*K1_HEX + K2_HEX*log10(A_c(p,j,k)+delta) + K3_HEX*log10(A_c(p,j,k)+delta)*log10(A_c(p,j,k)+delta) ;
+
+General_Constraint_1.. TSC =e= sum((p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss),Piping_IHTF_1(p,s,pp,ss))
+                    + sum((p,s,pp,ss)$plant_IF_circuit1(p,s,pp,ss),Pumping_IHTF_1(p,s,pp,ss))
+                    + Af * sum((p,i,k)$(P_HPS(p,i) and st(k)),HEXcost_h(p,i,k)) * CEPCI_2024_plant / CEPCI_2001_plant
+                    + Af * sum((p,j,k)$(P_CPS(p,j) and st(k)),HEXcost_c(p,j,k)) * CEPCI_2024_plant / CEPCI_2001_plant ;
+General_Constraint_2.. TSC =e= alloc('P3') + alloc('P4') + alloc('P5') ;
+
+Objective.. savings =e= log10(orig_cost('P4') - alloc('P4') - sum(i$i4(i),qu_h('P4',i))*CU_cw) + log10(orig_cost('P5') - alloc('P5') - sum(i$i5(i),qu_h('P5',i))*CU_cw - sum(i$i5(i),qru_h('P5',i))*RU_low) + log10(orig_cost('P3') - alloc('P3') - sum(j,qu_c('P3',j))*HU_lp) ;
+                  
+*Variable bounds
+A_c.up(p,j,k) = 1000 ;
+A_h.up(p,i,k) = 1000 ;
+Din_IHTF_1.up(p,s,pp,ss) = 0.6 ;
+dtc.lo(p,i,k) = 10 ;
+dth.lo(p,j,k) = 10 ;
+dtc.up(p,i,k)$P4_HPS(p,i) = 325 ;
+dtc.up(p,i,k)$P5_HPS(p,i) = 42 ;
+dth.up(p,j,k)$P_CPS(p,j) = 295 ;
+Wdot_IHTFpump_1.up(p,s,pp,ss) = 300 ;
+tref1_h.lo(p,i)$P_HPSwref(p,i) = 35 ;
+
+Model replica_model / all /;
+
+Option OptCR = 0.2;
+Option ResLim = 28000 ;
+
+replica_model.optfile = 1;
+
+Solve replica_model using NLP maximizing savings;
